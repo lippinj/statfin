@@ -3,13 +3,14 @@ import requests
 
 
 class Table:
-    """Interface for a specific PxWeb data table"""
+    """Interface to a PxWeb table"""
 
-    def __init__(self, url):
-        """Table located at the given URL
+    def __init__(self, url: str):
+        """
+        Interface to a table with the given endpoint URL
 
         Users normally want to create a table by calling
-        DatabaseApi.table() rather than directly.
+        Database.table() rather than directly.
         """
         self._url = url
         self._title = None
@@ -96,7 +97,7 @@ class Table:
         for code, values in filters.items():
             if values == "*":
                 values = list(self.values[code].code)
-            if not (isinstance(values, list) or isinstance(values, tuple)):
+            if not isinstance(values, (list, tuple)):
                 values = [values]
             out[code] = values
         return out

@@ -1,2 +1,2 @@
-from statfinpy.database_api import DatabaseApi
+from statfinpy.database import Database
 from statfinpy.table import Table

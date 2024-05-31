@@ -1,39 +1,37 @@
-# Python API for Tilastokeskus (Statistics Finland)
+# Python interface for Finnish statistics databases
 
-This package talks to the PxWeb API through which
-[Tilastokeskus](https://stat.fi/) (Statistics Finland in English)
-provides convenient access to its databases as pandas DataFrames.
-Verohallinto also exposes its databases in this way.
+This package lets you talk to databases using the PxWeb API.
 
-To find interesting databases, you can explore the web UI:
-[StatFin](https://pxdata.stat.fi/PxWeb/pxweb/fi/StatFin/),
-[Vero](https://vero2.stat.fi/PXWeb/pxweb/fi/Vero/).
+The PxWeb API is used by many Finnish statistics sources, notably those of
+[Statistics Finland](https://stat.fi) (Tilastokeskus), the national statistical institute.
+
+Results are usually given directly as pandas dataframes.
 
 ## Quick start
 
 ```py
-from statfinpy import DatabaseApi
+import statfinpy
 
 # Create top level database API interface
-api = DatabaseApi.StatFin()
-#api = DatabaseApi.StatFin("en") # In English
-#api = DatabaseApi.Vero()        # Database API for Verohallinto
+db = statfinpy.Database.StatFin()
+#db = Database.StatFin("en") # In English
+#db = Database.Vero()        # Database API for Verohallinto
 
 # Explore the contents of the database API:
-print(api.ls())                    # List databases
-print(api.ls("StatFin"))           # List database levels
-print(api.ls("StatFin", "tyokay")) # List database tables
+print(db.ls())                    # List databases
+print(db.ls("StatFin"))           # List database levels
+print(db.ls("StatFin", "tyokay")) # List database tables
 
 # Create an interface to a table
-table = api.table("StatFin", "statfin_tyokay_pxt_115b.px")
+tbl = db.table("StatFin", "statfin_tyokay_pxt_115b.px")
 
 # Explore the metadata of the table:
-print(table.title)           # Human readable title
-print(table.variables)       # Queryable variables
-print(table.values["Alue"])  # Possible values for a variable
+print(tbl.title)           # Human readable title
+print(tbl.variables)       # Queryable variables
+print(tbl.values["Alue"])  # Possible values for a variable
 
 # Query data from the table -- refer to table.values for codes
-df = table.query({
+df = tbl.query({
     "Alue": "SSS",                 # Single value
     "Pääasiallinen toiminta": "*", # All values
     "Sukupuoli": [1, 2],           # List of values
@@ -41,4 +39,5 @@ df = table.query({
     "Vuosi": "2022",               # Single value
     "Tiedot": "vaesto",            # Single value
 })
+print(df)
 ```
