@@ -4,11 +4,11 @@ import requests
 from statfinpy.table import Table
 
 
-class Database:
-    """Interface to a PxWeb database"""
+class PxWebAPI:
+    """Interface to a PxWeb database API"""
 
     @staticmethod
-    def StatFin(lang: str = "fi") -> "Database":
+    def StatFin(lang: str = "fi") -> "PxWebAPI":
         """
         Create an interface to the StatFin database
 
@@ -21,10 +21,10 @@ class Database:
         :param str lang: specify the database language (fi/sv/en)
         """
         url = f"https://statfin.stat.fi/PXWeb/api/v1/{lang}"
-        return Database(url)
+        return PxWebAPI(url)
 
     @staticmethod
-    def Verohallinto(lang: str = "fi") -> "Database":
+    def Verohallinto(lang: str = "fi") -> "PxWebAPI":
         """
         Create an interface to the Tax Administration database
 
@@ -36,7 +36,7 @@ class Database:
         :param str lang: specify the database language (fi/sv/en)
         """
         url = f"https://vero2.stat.fi/PXWeb/api/v1/{lang}"
-        return Database(url)
+        return PxWebAPI(url)
 
     def __init__(self, url: str):
         """Interface to the database located at the given URL"""
@@ -63,7 +63,7 @@ class Database:
 
     def ls(self, *args: str) -> pd.DataFrame:
         """
-        List database contents at various depths
+        List available contents at various depths
 
         To list all the databases here, call with no arguments:
 
