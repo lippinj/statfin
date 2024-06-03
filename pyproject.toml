@@ -1,0 +1,20 @@
+[project]
+name = "statfinpy"
+version = "0.0.1"
+description = "Python interface for Finnish statistics databases"
+authors = [{ name = "Joonas Lipping", email = "lippinj@outlook.com" }]
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/lippinj/statfinpy"
+Issues = "https://github.com/lippinj/statfinpy/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
