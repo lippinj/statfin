@@ -5,6 +5,10 @@ description = "Interface for Finnish statistics databases"
 authors = [{ name = "Joonas Lipping", email = "lippinj@outlook.com" }]
 readme = "README.md"
 requires-python = ">=3.12"
+dependencies = [
+    "pandas",
+    "requests"
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
