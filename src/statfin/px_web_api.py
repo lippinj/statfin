@@ -1,7 +1,7 @@
 import pandas as pd
 import requests
 
-from statfinpy.table import Table
+from statfin.table import Table
 
 
 class PxWebAPI:

@@ -9,14 +9,12 @@ institute.  For a list of available databases, take a look
 
 Results of queries and listings are returned as pandas DataFrames.
 
-## Usage
-
-More detailed usage instructions found below. Quick start:
+## Quick start
 
 ```py
-import statfinpy
+import statfin
 
-db = statfinpy.Database.StatFin()
+db = statfin.PxWebAPI.StatFin()
 
 print(db.ls())                    # List databases
 print(db.ls("StatFin"))           # List database levels
@@ -42,6 +40,8 @@ df = tbl.query({
 print(df)
 ```
 
+## Usage
+
 ### Requirements
 
 To install requirements with pip:
@@ -52,19 +52,19 @@ pip install -r requirements.txt
 
 ### Creating an interface
 
-Create an instance of `statfinpy.PxWebAPI` with the URL of the API:
+Create an instance of `statfin.PxWebAPI` with the URL of the API:
 
 ```py
->>> import statfinpy
->>> db = statfinpy.PxWebAPI(f"https://statfin.stat.fi/PXWeb/api/v1/fi")
+>>> import statfin
+>>> db = statfin.PxWebAPI(f"https://statfin.stat.fi/PXWeb/api/v1/fi")
 ```
 
 For convenience, there are some predefined shortcuts to common databases:
 
 ```py
->>> db1 = statfinpy.PxWebAPI.StatFin()          # StatFin database
->>> db2 = statfinpy.PxWebAPI.Verohallinto()     # Tax Administration database
->>> db3 = statfinpy.PxWebAPI.Verohallinto("sv") # Same but in Swedish
+>>> db1 = statfin.PxWebAPI.StatFin()          # StatFin database
+>>> db2 = statfin.PxWebAPI.Verohallinto()     # Tax Administration database
+>>> db3 = statfin.PxWebAPI.Verohallinto("sv") # Same but in Swedish
 ```
 
 The language is Finnish (`fi`) for default, but you can also specify English

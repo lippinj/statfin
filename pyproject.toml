@@ -1,7 +1,7 @@
 [project]
-name = "statfinpy"
+name = "statfin"
 version = "0.0.1"
-description = "Python interface for Finnish statistics databases"
+description = "Interface for Finnish statistics databases"
 authors = [{ name = "Joonas Lipping", email = "lippinj@outlook.com" }]
 readme = "README.md"
 requires-python = ">=3.12"
@@ -12,8 +12,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/lippinj/statfinpy"
-Issues = "https://github.com/lippinj/statfinpy/issues"
+Homepage = "https://github.com/lippinj/statfin"
+Issues = "https://github.com/lippinj/statfin/issues"
 
 [build-system]
 requires = ["hatchling"]
