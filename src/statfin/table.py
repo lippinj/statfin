@@ -1,5 +1,6 @@
 import pandas as pd
 import requests
+import statfin
 
 
 class Table:
@@ -53,7 +54,7 @@ class Table:
             self._fetch_metadata()
         return self._values
 
-    def query(self, filters):
+    def query(self, filters, cache: str | None = None) -> pd.DataFrame:
         """Query data from the API
 
         Pass filters in as keyword arguments, like code=value. The value
@@ -62,8 +63,17 @@ class Table:
 
         Returns a DataFrame.
         """
-        filters = self._expand_filters(filters)
-        return _parse_result(self.query_raw(filters))
+        if cache is None:
+            filters = self._expand_filters(filters)
+            return _parse_result(self.query_raw(filters))
+        else:
+            df = statfin.cache.load(cache, filters)
+            if df is not None:
+                return df
+            else:
+                df = self.query(filters)
+                statfin.cache.store(cache, df, filters)
+                return df
 
     def query_raw(self, filters):
         """Query data from the API (raw JSON)"""
