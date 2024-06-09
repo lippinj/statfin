@@ -1,6 +1,6 @@
 [project]
 name = "statfin"
-version = "0.0.3"
+version = "0.0.4"
 description = "Interface for Finnish statistics databases"
 authors = [{ name = "Joonas Lipping", email = "lippinj@outlook.com" }]
 readme = "README.md"

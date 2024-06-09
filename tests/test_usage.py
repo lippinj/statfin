@@ -34,6 +34,8 @@ def test_StatFin():
 
 
 def test_cached_query():
+    statfin.cache.clear()
+
     db = statfin.PxWebAPI.StatFin()
     table = db.table("StatFin", "statfin_tyokay_pxt_115b.px")
 
@@ -46,11 +48,11 @@ def test_cached_query():
             "Vuosi": "2022",
             "Tiedot": "vaesto",
         },
-        cache="__test.cached.df",
+        cache="test",
     )
     assert isinstance(df, pd.DataFrame)
-    assert os.path.isfile("__test.cached.df")
-    assert os.path.isfile("__test.cached.df.meta")
+    assert os.path.isfile(".statfincache/test.df")
+    assert os.path.isfile(".statfincache/test.meta")
 
     df = table.query(
         {
@@ -64,6 +66,3 @@ def test_cached_query():
         cache="__test.cached.df",
     )
     assert isinstance(df, pd.DataFrame)
-
-    os.remove("__test.cached.df")
-    os.remove("__test.cached.df.meta")
