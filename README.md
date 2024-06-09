@@ -9,6 +9,12 @@ institute.  For a list of available databases, take a look
 
 Results of queries and listings are returned as pandas DataFrames.
 
+## Installation
+
+```bash
+pip install statfin
+```
+
 ## Quick start
 
 ```py
