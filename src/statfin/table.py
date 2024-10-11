@@ -168,9 +168,13 @@ def _parse_result_data(j, key_cols, value_cols):
 
 
 def _to_value(x):
+    x = x.replace(' ', '').replace(',', '.')
     try:
-        xf = float(x)
-        xi = int(x)
-        return xf if xf == xi else xi
+        return int(x)
     except ValueError:
-        return None
+        pass
+    try:
+        return float(x)
+    except ValueError:
+        pass
+    return None

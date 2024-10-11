@@ -66,3 +66,17 @@ def test_cached_query():
         cache="__test.cached.df",
     )
     assert isinstance(df, pd.DataFrame)
+
+
+def test_handles_comma_separator():
+    db = statfin.PxWebAPI.StatFin()
+    table = db.table("StatFin", "statfin_ntp_pxt_11tj.px")
+    df = table.query({
+        "Vuosineljännes": "*",
+        "Taloustoimi": "E2",
+        "Toimiala": "SSS",
+    })
+    assert(df.KAUSIT.notna().all())
+    assert(df.TASM.notna().all())
+    assert(df.TRENDI.notna().all())
+    assert(df.TYOP.notna().all())
