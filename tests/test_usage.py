@@ -51,8 +51,8 @@ def test_cached_query():
         cache="test",
     )
     assert isinstance(df, pd.DataFrame)
-    assert os.path.isfile(".statfincache/test.df")
-    assert os.path.isfile(".statfincache/test.meta")
+    assert os.path.isfile(".statfin_cache/test.df")
+    assert os.path.isfile(".statfin_cache/test.meta")
 
     df = table.query(
         {
