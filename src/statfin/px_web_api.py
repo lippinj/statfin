@@ -1,7 +1,7 @@
 import pandas as pd
-import requests
 
 from statfin.table import Table
+from statfin.request import get_json
 
 
 class PxWebAPI:
@@ -84,8 +84,7 @@ class PxWebAPI:
 
     def _get(self, *args: str) -> dict | list:
         """HTTP GET the concatenation of args"""
-        r = requests.get(self._concat_url(*args))
-        return r.json()
+        return get_json(self._concat_url(*args))
 
     def _get_as_dataframe(self, *args: str) -> pd.DataFrame:
         """Like _get(), but forms the response into a dataframe"""

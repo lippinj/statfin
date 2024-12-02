@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import pytest
 import statfin
 
 
@@ -80,3 +81,27 @@ def test_handles_comma_separator():
     assert(df.TASM.notna().all())
     assert(df.TRENDI.notna().all())
     assert(df.TYOP.notna().all())
+
+
+def test_ls_error():
+    db = statfin.PxWebAPI.StatFin()
+    with pytest.raises(statfin.RequestError) as e:
+        df = db.ls("ThisDatabaseDoesNotExist")
+
+
+def test_table_metadata_error():
+    db = statfin.PxWebAPI.StatFin()
+    table = db.table("StatFin", "no_such_table.px")
+    with pytest.raises(statfin.RequestError) as e:
+        values = table.values
+
+
+def test_table_query_error():
+    db = statfin.PxWebAPI.StatFin()
+    table = db.table("StatFin", "statfin_ntp_pxt_11tj.px")
+    with pytest.raises(statfin.RequestError) as e:
+        df = table.query({
+            "FooBarBaz": "ABC",
+            "Taloustoimi": "E2",
+            "Toimiala": "SSS",
+        })

@@ -1,6 +1,7 @@
 import pandas as pd
-import requests
+
 import statfin
+from statfin.request import get_json, post_json
 
 
 class Table:
@@ -77,14 +78,10 @@ class Table:
 
     def query_raw(self, filters):
         """Query data from the API (raw JSON)"""
-        return self._post(_format_payload(filters))
-
-    def _post(self, payload):
-        r = requests.post(self._url, json=payload)
-        return r.json()
+        return post_json(self._url, json=_format_payload(filters))
 
     def _fetch_metadata(self):
-        j = requests.get(self._url).json()
+        j = get_json(self._url)
         self._title = j["title"]
         self._variables = pd.DataFrame(
             data={
@@ -168,7 +165,7 @@ def _parse_result_data(j, key_cols, value_cols):
 
 
 def _to_value(x):
-    x = x.replace(' ', '').replace(',', '.')
+    x = x.replace(" ", "").replace(",", ".")
     try:
         return int(x)
     except ValueError:
