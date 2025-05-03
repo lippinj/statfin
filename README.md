@@ -20,21 +20,30 @@ pip install statfin
 ```py
 import statfin
 
-db = statfin.PxWebAPI.StatFin()
+# Create the API root object
+db = statfin.StatFin()
 
-print(db.ls())                    # List databases
-print(db.ls("StatFin"))           # List database levels
-print(db.ls("StatFin", "tyokay")) # List database tables
+# Navigate the content tree
+print(db)                 # API root
+print(db["StatFin"])      # Database named StatFin
+print(db.StatFin.tyokay)  # Level named tyokay inside StatFin
 
-# Create an interface to a table
-tbl = db.table("StatFin", "statfin_tyokay_pxt_115b.px")
+# Locate the table of interest (the .px suffix can be omitted)
+tbl = db.StatFin.tyokay["statfin_tyokay_pxt_115b.px"]
+tbl = db.StatFin.tyokay.statfin_tyokay_pxt_115b
 
-# Explore the metadata of the table:
-print(tbl.title)           # Human readable title
-print(tbl.variables)       # Queryable variables
-print(tbl.values["Alue"])  # Possible values for a variable
+# In fact, any unambiguous part of the name suffices
+tbl = db.StatFin.tyokay._115b
 
-# Query data from the table -- refer to table.values for codes
+# Explore the table
+print(tbl)             # Table information
+print(tbl.Alue)        # Variable present in the table
+print(tbl.Alue.KU941)  # Value that the variable can take
+
+# Look up items in the variable values
+tbl.Alue.find("vantaa")
+
+# Query data from the table -- use codes found above
 df = tbl.query({
     "Alue": "SSS",                 # Single value
     "Pääasiallinen toiminta": "*", # All values
@@ -68,9 +77,9 @@ Create an instance of `statfin.PxWebAPI` with the URL of the API:
 For convenience, there are some predefined shortcuts to common databases:
 
 ```py
->>> db1 = statfin.PxWebAPI.StatFin()          # StatFin database
->>> db2 = statfin.PxWebAPI.Verohallinto()     # Tax Administration database
->>> db3 = statfin.PxWebAPI.Verohallinto("sv") # Same but in Swedish
+>>> db1 = statfin.StatFin()  # StatFin database
+>>> db2 = statfin.Vero()     # Tax Administration database
+>>> db3 = statfin.Vero("sv") # Same but in Swedish
 ```
 
 The language is Finnish (`fi`) for default, but you can also specify English
@@ -78,150 +87,78 @@ The language is Finnish (`fi`) for default, but you can also specify English
 
 ### Listing contents
 
-Use the `ls()` method to list available contents at various depths. The listing
-is returned as a dataframe. To list databases:
+The data provided by the API is laid out in a tree. The predefined interfaces 
+place you at the root, from where you can select one of a number of databases.
+To list them, simply print the object:
 
 ```py
->>> db.ls()
-                                   dbid                                 text
-0                                 Check                                Check
-1                              Explorer                             Explorer
-2                     Hyvinvointialueet                    Hyvinvointialueet
-3                  Kokeelliset_tilastot                 Kokeelliset_tilastot
-4                    Kuntien_avainluvut                   Kuntien_avainluvut
-5            Kuntien_talous_ja_toiminta           Kuntien_talous_ja_toiminta
-6       Maahanmuuttajat_ja_kotoutuminen      Maahanmuuttajat_ja_kotoutuminen
-7             Muuttaneiden_taustatiedot            Muuttaneiden_taustatiedot
-8   Postinumeroalueittainen_avoin_tieto  Postinumeroalueittainen_avoin_tieto
-9                                   SDG                                  SDG
-10                              StatFin                              StatFin
-11                     StatFin_Passiivi                     StatFin_Passiivi
-12                   Toimipaikkalaskuri                   Toimipaikkalaskuri
+>>> db = statfin.StatFin()
+>>> db
+statfin.PxWebAPI
+  url: https://statfin.stat.fi/PXWeb/api/v1/fi
+  contents:
+      Check                               Check
+      Hyvinvointialueet                   Hyvinvointialueet
+      Kokeelliset_tilastot                Kokeelliset_tilastot
+      Kuntien_avainluvut                  Kuntien_avainluvut
+      Kuntien_talous_ja_toiminta          Kuntien_talous_ja_toiminta
+      Maahanmuuttajat_ja_kotoutuminen     Maahanmuuttajat_ja_kotoutuminen
+      Muuttaneiden_taustatiedot           Muuttaneiden_taustatiedot
+      Postinumeroalueittainen_avoin_tieto Postinumeroalueittainen_avoin_tieto
+      SDG                                 SDG
+      StatFin                             StatFin
+      StatFin_Passiivi                    StatFin_Passiivi
+      Toimipaikkalaskuri                  Toimipaikkalaskuri
+      ymp                                 ymp
 ```
 
-To list layers within a database:
+To descend to a child node from a particular location, use its name like an
+index or like an attribute name, e.g. `db["StatFin"]` or `db.StatFin`.
+Specifying just part of the name is enough, as long as it is ambiguous; for
+example, `db.Posti` is enough to access `Postinumeroalueittainen_avoin_tieto`.
 
 ```py
->>> db.ls("StatFin")
-        id type                                      text
-0    adopt    l                                  Adoptiot
-1      aku    l         Aikuiskoulutukseen osallistuminen
-2      ava    l                              Ainevalinnat
-3     akay    l                                Ajankäyttö
-4      aly    l      Aloittaneet ja lopettaneet yritykset
-..     ...  ...                                       ...
-141  ympsm    l                    Ympäristönsuojelumenot
-142   ymtu    l                             Ympäristötuet
-143    yev    l                            Ympäristöverot
-144   yrti    l  Yritysten rakenne- ja tilinpäätöstilasto
-145   yrtt    l                         Yritystukitilasto
-
-[146 rows x 3 columns]
+>>> db.Posti
+statfin.PxWebAPI
+  url: https://statfin.stat.fi/PXWeb/api/v1/fi/Postinumeroalueittainen_avoin_tieto
+  title: Postinumeroalueittainen_avoin_tieto
+  contents:
+    l uusin   Uusin aineisto
+    l arkisto Arkisto
 ```
 
-To list tables belonging to a layer:
+At the leaves of the tree, we find tables:
 
 ```py
->>> db.ls("StatFin", "akay")
-                         id type                                               text              updated
-0   statfin_akay_pxt_001.px    t                 001 -- Ajankäyttö (26 lk) syksyllä  2019-09-13T14:43:44
-1   statfin_akay_pxt_002.px    t  002 -- Ajankäyttö (26 lk) pääasiallisen toimin...  2017-10-09T10:40:08
-2   statfin_akay_pxt_003.px    t  003 -- Työllisten miesten ja naisten ajankäytt...  2017-10-09T10:40:08
-3   statfin_akay_pxt_004.px    t       004 -- Ajankäyttö (26 lk) elinvaiheen mukaan  2017-10-09T10:40:08
-4   statfin_akay_pxt_005.px    t        005 -- Ajankäyttö (82 lk) sukupuolen mukaan  2017-10-09T10:40:08
-5   statfin_akay_pxt_006.px    t               006 -- Ajankäyttö (82 lk) iän mukaan  2019-09-19T08:44:44
-6   statfin_akay_pxt_007.px    t  007 -- Yli 10-vuotiaiden ajankäyttö (132 lk) s...  2017-10-09T10:40:08
-7   statfin_akay_pxt_008.px    t  008 -- Kirjastossa käyminen 12 kuukauden aikan...  2017-10-09T10:40:08
-8   statfin_akay_pxt_009.px    t  009 -- Kirjastossa käyminen 12 kuukauden aikan...  2017-10-09T10:40:08
-9   statfin_akay_pxt_010.px    t  010 -- Kirjastossa käyminen 12 kuukauden aikan...  2017-10-09T10:40:08
-10  statfin_akay_pxt_011.px    t  011 -- Lukemiseen käytetty aika sukupuolen ja ...  2019-09-19T08:44:44
-11  statfin_akay_pxt_012.px    t            012 -- Kulttuuritilaisuuksissa käyminen  2019-09-19T08:44:44
-12  statfin_akay_pxt_013.px    t             013 -- Luovien taiteiden harrastaminen  2019-09-19T08:44:44
+>>> db.StatFin.vaerak._14x5
+statfin.Table
+  url: https://statfin.stat.fi/PXWeb/api/v1/fi/StatFin/vaerak/statfin_vaerak_pxt_14x5.px
+  title: Väestö 31.12. muuttujina Vuosi, Taajama ja Tiedot
+  variables:
+    Vuosi   Vuosi
+    Taajama Taajama
+    Tiedot  Tiedot
 ```
 
-### Creating a table interface
+### Using tables
 
-To access a specific table, call the method `table(database, layer, table_name)`:
+The table has a number of variables, which you can access by indexing or
+attribute-like access, like before:
 
 ```py
->>> table = db.table("StatFin", "akay", "statfin_akay_pxt_006.px")
+>>> tbl.Taajama
+statfin.Variable
+  code: Taajama
+  text: Taajama
+  values:
+    TA2320 Ahde
+    TA0146 Ahlainen
+    TA1109 Ahola (Posio)
+    TA1163 Ahonkylä
+    ...
 ```
-
-For newer API versions, the layer can be omitted:
-
-```py
->>> table = db.table("StatFin", "statfin_akay_pxt_006.px")
-```
-
-### Reading table metadata
-
-Table title:
-
-```py
->>> table.title
-'006 -- Ajankäyttö (82 lk) iän mukaan'
-```
-
-Table variables (as a dataframe):
-
-```py
->>> table.variables
-        code       text
-0   Toiminto   Toiminto
-1        Ikä        Ikä
-2  Sukupuoli  Sukupuoli
-3     Vuodet     Vuodet
-```
-
-Table variables (as a dataframe):
-
-```py
->>> table.variables
-        code       text
-0   Toiminto   Toiminto
-1        Ikä        Ikä
-2  Sukupuoli  Sukupuoli
-3     Vuodet     Vuodet
-```
-
-Possible values for the variables (as a mapping of variable code to dataframe):
-
-```py
->>> table.values.keys()
-dict_keys(['Toiminto', 'Ikä', 'Sukupuoli', 'Vuodet'])
->>> table.values["Vuodet"]
-        code       text
-0  1987-1988  1987-1988
-1  1999-2000  1999-2000
-2  2009-2010  2009-2010
-```
-
-### Querying table contents
 
 Use the `query()` method to query data filtered by variables as a dataframe.
 
 For each variable, you can specify a single value, a list of values or all
 values (`*`). Make sure to use variable codes, not human readable names!
-
-```py
->>> table.query({
-...         "Toiminto": "*",
-...         "Ikä": [1, 2, 3],
-...         "Sukupuoli": "S",
-...         "Vuodet": "2009-2010"
-...     })
-    Toiminto Ikä Sukupuoli     Vuodet Ajankäyttö (82 lk)
-0      01-82   1         S  2009-2010               None
-1      01-82   2         S  2009-2010               None
-2      01-82   3         S  2009-2010               None
-3      01-03   1         S  2009-2010               None
-4      01-03   2         S  2009-2010               None
-..       ...  ..       ...        ...                ...
-292       81   2         S  2009-2010               None
-293       81   3         S  2009-2010               None
-294       82   1         S  2009-2010               None
-295       82   2         S  2009-2010               None
-296       82   3         S  2009-2010               None
-
-[297 rows x 5 columns]
-```

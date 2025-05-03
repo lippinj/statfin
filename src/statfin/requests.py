@@ -8,12 +8,12 @@ class RequestError(Exception):
         self.url = url
 
 
-def get_json(url, *args, **kwargs):
+def get(url, *args, **kwargs):
     r = requests.get(url, *args, **kwargs, timeout=60)
     return _as_json(r)
 
 
-def post_json(url, *args, **kwargs):
+def post(url, *args, **kwargs):
     r = requests.post(url, *args, **kwargs, timeout=60)
     return _as_json(r)
 

@@ -1,59 +1,56 @@
+from typing import Iterable
+
 import pandas as pd
 
 import statfin
-from statfin.request import get_json, post_json
+from statfin.variable import Variable
+from statfin.requests import get, post
 
 
 class Table:
     """Interface to a PxWeb table"""
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, j: dict | None = None):
         """
         Interface to a table with the given endpoint URL
 
         Users normally want to create a table by calling
         Database.table() rather than directly.
         """
-        self._url = url
-        self._title = None
-        self._variables = None
-        self._values = None
+        j = j or get(url)
+        self.url = url
+        self.title = j["title"]
+        self.variables = [Variable(jv) for jv in j["variables"]]
 
-    @property
-    def title(self):
-        """Human readable title for this table
+    def __repr__(self):
+        """Representational string"""
+        s = "statfin.Table\n"
+        s += f"  url: {self.url}\n"
+        if self.title:
+            s += f"  title: {self.title}\n"
+        if len(self.variables) == 0:
+            s += "  variables: (none)\n"
+        else:
+            s += "  variables:\n"
+            width = max([len(variable.code) for variable in self.variables])
+            for variable in self.variables:
+                s += f"    {variable.code.ljust(width)} {variable.text}\n"
+        return s
 
-        Lazily loads the table metadata, if not already loaded.
-        """
-        if self._title is None:
-            self._fetch_metadata()
-        return self._title
+    def __iter__(self) -> Iterable[Variable]:
+        """Iterate variables"""
+        return iter(self.variables)
 
-    @property
-    def variables(self):
-        """Queryable variables
+    def __getattr__(self, code: str) -> Variable:
+        """Look up a variable with the given code"""
+        return self[code]
 
-        This is a DataFrame containing variable codes and human readable
-        descriptions.
-
-        Lazily loads the table metadata, if not already loaded.
-        """
-        if self._variables is None:
-            self._fetch_metadata()
-        return self._variables
-
-    @property
-    def values(self):
-        """Values of the queryable variables
-
-        This is a dictionary from variable code to a DataFrame
-        containing value codes and human readable descriptions.
-
-        Lazily loads the table metadata, if not already loaded.
-        """
-        if self._values is None:
-            self._fetch_metadata()
-        return self._values
+    def __getitem__(self, code: str) -> Variable:
+        """Look up a variable with the given code"""
+        for variable in self.variables:
+            if variable.code == code:
+                return variable
+        raise IndexError(f"No variable named {code} in the table")
 
     def query(self, filters, cache: str | None = None) -> pd.DataFrame:
         """Query data from the API
@@ -78,32 +75,13 @@ class Table:
 
     def query_raw(self, filters):
         """Query data from the API (raw JSON)"""
-        return post_json(self._url, json=_format_payload(filters))
-
-    def _fetch_metadata(self):
-        j = get_json(self._url)
-        self._title = j["title"]
-        self._variables = pd.DataFrame(
-            data={
-                "code": [jv["code"] for jv in j["variables"]],
-                "text": [jv["text"] for jv in j["variables"]],
-            }
-        )
-        self._values = {
-            jv["code"]: pd.DataFrame(
-                data={
-                    "code": jv["values"],
-                    "text": jv["valueTexts"],
-                }
-            )
-            for jv in j["variables"]
-        }
+        return post(self.url, json=_format_payload(filters))
 
     def _expand_filters(self, filters):
         out = {}
         for code, values in filters.items():
             if values == "*":
-                values = list(self.values[code].code)
+                values = [value.code for value in self[code]]
             if not isinstance(values, (list, tuple)):
                 values = [values]
             out[code] = values

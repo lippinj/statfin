@@ -4,24 +4,35 @@ import pytest
 import statfin
 
 
-def test_Verohallinto():
-    db = statfin.PxWebAPI.Verohallinto()
-    assert isinstance(db.ls(), pd.DataFrame)
-    assert isinstance(db.ls("Vero"), pd.DataFrame)
+def test_Vero():
+    db = statfin.Vero()
+    assert db.url == "https://vero2.stat.fi/PXWeb/api/v1/fi"
 
 
 def test_StatFin():
-    db = statfin.PxWebAPI.StatFin()
-    assert isinstance(db.ls(), pd.DataFrame)
-    assert isinstance(db.ls("StatFin"), pd.DataFrame)
-    assert isinstance(db.ls("StatFin", "tyokay"), pd.DataFrame)
+    db = statfin.StatFin()
+    assert db.url == "https://statfin.stat.fi/PXWeb/api/v1/fi"
 
-    table = db.table("StatFin", "statfin_tyokay_pxt_115b.px")
-    assert isinstance(table.title, str)
-    assert isinstance(table.variables, pd.DataFrame)
-    assert isinstance(table.values["Alue"], pd.DataFrame)
+def test_drilling():
+    db = statfin.Vero()
+    assert isinstance(db.Vero, statfin.PxWebAPI)
+    assert isinstance(db.Vero.Henk, statfin.PxWebAPI)
+    assert isinstance(db.Vero.Henk.lopulliset, statfin.PxWebAPI)
+    assert isinstance(db.Vero.Henk.lopulliset.tulot._101, statfin.Table)
+    assert isinstance(db["Vero"]["Henk"].lopulliset["tulot"]._101, statfin.Table)
+    
+def test_variables():
+    db = statfin.StatFin()
+    tbl = db.StatFin.tyokay._115b
+    assert isinstance(tbl.Alue, statfin.Variable)
+    assert isinstance(tbl["Alue"], statfin.Variable)
+    assert isinstance(tbl.Alue.SSS, statfin.Value)
+    assert isinstance(tbl.Alue["SSS"], statfin.Value)
 
-    df = table.query(
+def test_query():
+    db = statfin.StatFin()
+    tbl = db.StatFin.tyokay._115b
+    df = tbl.query(
         {
             "Alue": "SSS",  # Single value
             "Pääasiallinen toiminta": "*",  # All values
@@ -36,11 +47,9 @@ def test_StatFin():
 
 def test_cached_query():
     statfin.cache.clear()
-
-    db = statfin.PxWebAPI.StatFin()
-    table = db.table("StatFin", "statfin_tyokay_pxt_115b.px")
-
-    df = table.query(
+    db = statfin.StatFin()
+    tbl = db.StatFin.tyokay._115b
+    df = tbl.query(
         {
             "Alue": "SSS",
             "Pääasiallinen toiminta": "*",
@@ -55,7 +64,7 @@ def test_cached_query():
     assert os.path.isfile(".statfin_cache/test.df")
     assert os.path.isfile(".statfin_cache/test.meta")
 
-    df = table.query(
+    df = tbl.query(
         {
             "Alue": "SSS",
             "Pääasiallinen toiminta": "*",
@@ -70,9 +79,9 @@ def test_cached_query():
 
 
 def test_handles_comma_separator():
-    db = statfin.PxWebAPI.StatFin()
-    table = db.table("StatFin", "statfin_ntp_pxt_11tj.px")
-    df = table.query({
+    db = statfin.StatFin()
+    tbl = db.StatFin.ntp._11tj
+    df = tbl.query({
         "Vuosineljännes": "*",
         "Taloustoimi": "E2",
         "Toimiala": "SSS",
@@ -82,26 +91,3 @@ def test_handles_comma_separator():
     assert(df.TRENDI.notna().all())
     assert(df.TYOP.notna().all())
 
-
-def test_ls_error():
-    db = statfin.PxWebAPI.StatFin()
-    with pytest.raises(statfin.RequestError) as e:
-        df = db.ls("ThisDatabaseDoesNotExist")
-
-
-def test_table_metadata_error():
-    db = statfin.PxWebAPI.StatFin()
-    table = db.table("StatFin", "no_such_table.px")
-    with pytest.raises(statfin.RequestError) as e:
-        values = table.values
-
-
-def test_table_query_error():
-    db = statfin.PxWebAPI.StatFin()
-    table = db.table("StatFin", "statfin_ntp_pxt_11tj.px")
-    with pytest.raises(statfin.RequestError) as e:
-        df = table.query({
-            "FooBarBaz": "ABC",
-            "Taloustoimi": "E2",
-            "Toimiala": "SSS",
-        })

@@ -1,95 +1,117 @@
-import pandas as pd
+from typing import Any, Iterable
+import dataclasses
 
+from statfin.requests import get
 from statfin.table import Table
-from statfin.request import get_json
+
+
+@dataclasses.dataclass
+class IndexEntry:
+    """Entry in the database index"""
+
+    name: str
+    text: str
+    typeid: str | None = None
+
+    def __repr__(self):
+        """Representational string"""
+        fields = [repr(self.name), repr(self.text)]
+        if self.typeid:
+            fields += [repr(self.typeid)]
+        return f"IndexEntry({', '.join(fields)})"
+
+    @staticmethod
+    def from_json(j):
+        """Parse from JSON"""
+        if j is None:
+            return None
+        elif isinstance(j, list):
+            return [IndexEntry.from_json(e) for e in j]
+        else:
+            name = j.get("id", j.get("dbid", "")).rstrip()
+            text = j["text"].rstrip()
+            typeid = j.get("type", None)
+            if typeid is not None:
+                typeid = typeid.rstrip()
+            return IndexEntry(name, text, typeid)
 
 
 class PxWebAPI:
     """Interface to a PxWeb API"""
 
-    @staticmethod
-    def StatFin(lang: str = "fi") -> "PxWebAPI":
-        """
-        Create an interface to the StatFin database
-
-        This is the main database of Statistics Finland, and contains various
-        statistics about the Finnish society and population.
-
-        The web interface is located at:
-        https://pxdata.stat.fi/PxWeb/pxweb/fi/StatFin/
-
-        :param str lang: specify the database language (fi/sv/en)
-        """
-        return PxWebAPI("https://statfin.stat.fi/PXWeb/api", "v1", lang)
-
-    @staticmethod
-    def Verohallinto(lang: str = "fi") -> "PxWebAPI":
-        """
-        Create an interface to the Tax Administration database
-
-        This database contains statistics about taxation.
-
-        The web interface is located at:
-        https://vero2.stat.fi/PXWeb/pxweb/fi/Vero/
-
-        :param str lang: specify the database language (fi/sv/en)
-        """
-        return PxWebAPI("https://vero2.stat.fi/PXWeb/api", "v1", lang)
-
-    def __init__(self, root: str, version: str, language: str):
+    def __init__(
+        self,
+        url: str,
+        title: str | None = None,
+        j: list | None = None,
+    ):
         """Interface to the database located at the given URL"""
-        self._root: str = root
-        self._version: str = version
-        self._language: str = language
+        self.url: str = url
+        self.title: str | None = title
+        self._index: list[IndexEntry] | None = IndexEntry.from_json(j)
+        self._cache: dict[str, Any] = {}
 
-    def table(self, *args: str) -> Table:
-        """
-        Create an interface to a specific table
+    def __repr__(self):
+        """Representational string"""
+        s = "statfin.PxWebAPI\n"
+        s += f"  url: {self.url}\n"
+        if self.title:
+            s += f"  title: {self.title}\n"
+        if len(self.index) == 0:
+            s += "  contents: (none)\n"
+        else:
+            s += "  contents:\n"
+            width = max([len(entry.name) for entry in self.index])
+            for entry in self.index:
+                typeid = entry.typeid if entry.typeid else " "
+                name = entry.name.ljust(width)
+                s += f"    {typeid} {name} {entry.text}\n"
+        return s
 
-        The arguments must constitute a path to a specific table, starting with
-        the database ID and ending with the table name (with any levels in
-        between):
+    @property
+    def index(self):
+        """Lazy fetch the index"""
+        if self._index is None:
+            self._index = IndexEntry.from_json(get(self.url))
+        return self._index
 
-           db.table("StatFin", "tyokay", "statfin_tyokay_pxt_115b.px")
+    def __iter__(self) -> Iterable[Any]:
+        """Iterate databases"""
+        for entry in self.index:
+            yield self[entry.name]
 
-        In some versions of the API, you can skip the levels, just specifying
-        the database ID and the table name:
+    def __getattr__(self, name: str) -> Any | Table:
+        """Look up database, level or table with the given name"""
+        return self[name]
 
-           api.table("StatFin", "statfin_tyokay_pxt_115b.px")
-        """
-        assert len(args) >= 2
-        return Table(self._concat_url(*args))
+    def __getitem__(self, name: str) -> Any | Table:
+        """Look up database, level or table with the given name"""
+        entry = self._find_entry(name)
+        if entry.name not in self._cache:
+            self._cache[entry.name] = self._make_cache(entry)
+        return self._cache[entry.name]
 
-    def ls(self, *args: str) -> pd.DataFrame:
-        """
-        List available contents at various depths
+    def _make_cache(self, entry):
+        url = f"{self.url}/{entry.name}"
+        j = get(url)
+        if isinstance(j, list):
+            return PxWebAPI(url, entry.text, j)
+        else:
+            return Table(url, j)
 
-        To list all the databases here, call with no arguments:
+    def _find_entry(self, name: str):
+        partial_candidates = []
+        for entry in self.index:
+            if entry.name == name:
+                return entry
+            elif entry.name == f"{name}.px":
+                return entry
+            elif name in entry.name:
+                partial_candidates.append(entry)
 
-            db.ls()
-
-        To list content inside a database (levels or tables), call with one or
-        more arguments:
-
-            db.ls("StatFin")
-            db.ls("StatFin", "tyokay")
-
-        In all cases, the results are returned as a dataframe.
-        """
-        return self._get_as_dataframe(*args)
-
-    def _concat_url(self, *args: str) -> str:
-        """Concatenate the base URL and args into an endpoint URL"""
-        return "/".join([self._root, self._version, self._language] + list(args))
-
-    def _get(self, *args: str) -> dict | list:
-        """HTTP GET the concatenation of args"""
-        return get_json(self._concat_url(*args))
-
-    def _get_as_dataframe(self, *args: str) -> pd.DataFrame:
-        """Like _get(), but forms the response into a dataframe"""
-        j = self._get(*args)
-        assert isinstance(j, list)
-        assert isinstance(j[0], dict)
-        data = {k: [d[k] for d in j] for k in j[0].keys()}
-        return pd.DataFrame(data=data)
+        if len(partial_candidates) == 0:
+            raise IndexError(f"No entry {name} or {name}.px in the index")
+        elif len(partial_candidates) == 1:
+            return partial_candidates[0]
+        else:
+            raise IndexError(f"Ambiguous partial entry {name} in the index")
