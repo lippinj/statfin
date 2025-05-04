@@ -44,14 +44,12 @@ print(tbl.Alue.KU941)  # Value that the variable can take
 tbl.Alue.find("vantaa")
 
 # Query data from the table -- use codes found above
-df = tbl.query({
-    "Alue": "SSS",                 # Single value
-    "Pääasiallinen toiminta": "*", # All values
-    "Sukupuoli": [1, 2],           # List of values
-    "Ikä": "18-64",                # Single value
-    "Vuosi": "2022",               # Single value
-    "Tiedot": "vaesto",            # Single value
-})
+q = tbl.query()
+q.Alue = "SSS"       # Single value
+q.Vuosi = 2022       # Single value (cast to str)
+q.Sukupuoli = [1, 2] # Specific values
+q.Tiedot = "*"       # All values (this is the default)
+df = q()
 print(df)
 ```
 
@@ -87,7 +85,7 @@ The language is Finnish (`fi`) for default, but you can also specify English
 
 ### Listing contents
 
-The data provided by the API is laid out in a tree. The predefined interfaces 
+The data provided by the API is laid out in a tree. The predefined interfaces
 place you at the root, from where you can select one of a number of databases.
 To list them, simply print the object:
 
@@ -96,20 +94,16 @@ To list them, simply print the object:
 >>> db
 statfin.PxWebAPI
   url: https://statfin.stat.fi/PXWeb/api/v1/fi
-  contents:
-      Check                               Check
-      Hyvinvointialueet                   Hyvinvointialueet
-      Kokeelliset_tilastot                Kokeelliset_tilastot
-      Kuntien_avainluvut                  Kuntien_avainluvut
-      Kuntien_talous_ja_toiminta          Kuntien_talous_ja_toiminta
-      Maahanmuuttajat_ja_kotoutuminen     Maahanmuuttajat_ja_kotoutuminen
-      Muuttaneiden_taustatiedot           Muuttaneiden_taustatiedot
-      Postinumeroalueittainen_avoin_tieto Postinumeroalueittainen_avoin_tieto
-      SDG                                 SDG
-      StatFin                             StatFin
-      StatFin_Passiivi                    StatFin_Passiivi
-      Toimipaikkalaskuri                  Toimipaikkalaskuri
-      ymp                                 ymp
+  index:
+     Check                               Check
+     Hyvinvointialueet                   Hyvinvointialueet
+     Kokeelliset_tilastot                Kokeelliset_tilastot
+     Kuntien_avainluvut                  Kuntien_avainluvut
+     Kuntien_talous_ja_toiminta          Kuntien_talous_ja_toiminta
+     Maahanmuuttajat_ja_kotoutuminen     Maahanmuuttajat_ja_kotoutuminen
+     Muuttaneiden_taustatiedot           Muuttaneiden_taustatiedot
+     ... and 6 more
+>>>
 ```
 
 To descend to a child node from a particular location, use its name like an
@@ -119,26 +113,32 @@ example, `db.Posti` is enough to access `Postinumeroalueittainen_avoin_tieto`.
 
 ```py
 >>> db.Posti
-statfin.PxWebAPI
-  url: https://statfin.stat.fi/PXWeb/api/v1/fi/Postinumeroalueittainen_avoin_tieto
-  title: Postinumeroalueittainen_avoin_tieto
-  contents:
-    l uusin   Uusin aineisto
-    l arkisto Arkisto
+    statfin.PxWebAPI
+      url: https://statfin.stat.fi/PXWeb/api/v1/fi/Postinumeroalueittainen_avoin_tieto
+      title: Postinumeroalueittainen_avoin_tieto
+      index:
+        (l) uusin   Uusin aineisto
+        (l) arkisto Arkisto
+>>>
 ```
 
 At the leaves of the tree, we find tables:
 
 ```py
->>> db.StatFin.vaerak._14x5
+>>> db.StatFin.tyokay._115b
 statfin.Table
-  url: https://statfin.stat.fi/PXWeb/api/v1/fi/StatFin/vaerak/statfin_vaerak_pxt_14x5.px
-  title: Väestö 31.12. muuttujina Vuosi, Taajama ja Tiedot
+  url: https://statfin.stat.fi/PXWeb/api/v1/fi/StatFin/tyokay/statfin_tyokay_pxt_115b.px
+  title: Väestö muuttujina Alue, Pääasiallinen toiminta, Sukupuoli, Ikä, Vuosi ja Tiedot
   variables:
-    Vuosi   Vuosi
-    Taajama Taajama
-    Tiedot  Tiedot
+    [310] Alue                   Alue
+    [10]  Pääasiallinen toiminta Pääasiallinen toiminta
+    [3]   Sukupuoli              Sukupuoli
+    [4]   Ikä                    Ikä
+    [37]  Vuosi                  Vuosi
+    [1]   Tiedot                 Tiedot
+>>>
 ```
+
 
 ### Using tables
 
@@ -146,19 +146,65 @@ The table has a number of variables, which you can access by indexing or
 attribute-like access, like before:
 
 ```py
->>> tbl.Taajama
+>>> tbl.Alue
 statfin.Variable
-  code: Taajama
-  text: Taajama
+  code: Alue
+  text: Alue
   values:
-    TA2320 Ahde
-    TA0146 Ahlainen
-    TA1109 Ahola (Posio)
-    TA1163 Ahonkylä
-    ...
+    SSS   KOKO MAA
+    KU020 Akaa
+    KU005 Alajärvi
+    KU009 Alavieska
+    KU010 Alavus
+    KU016 Asikkala
+    KU018 Askola
+     ... and 303 more
+>>>
 ```
 
-Use the `query()` method to query data filtered by variables as a dataframe.
+Use the `query()` method to construct a query object, the populate its
+attributes to specify variable filters:
 
-For each variable, you can specify a single value, a list of values or all
-values (`*`). Make sure to use variable codes, not human readable names!
+```py
+>>> q = tbl.query()
+>>> q.Vuosi = 2023
+>>> q.Alue = "SSS"
+>>> q["Pääasiallinen toiminta"] = "*"
+```
+
+For each variable, you can specify a single value, a list of values, or all
+available values (by passing `"*"`). The default is to treat all variables as
+`*`.
+
+To execute the query and retrieve results as a pandas DataFrame, invoke the
+query object:
+
+```py
+>>> q()
+    Alue Pääasiallinen toiminta Sukupuoli    Ikä Vuosi   vaesto
+0    SSS                    SSS       SSS    SSS  2023  5603851
+1    SSS                    SSS       SSS   0-17  2023  1022205
+2    SSS                    SSS       SSS  18-64  2023  3272270
+3    SSS                    SSS       SSS    65-  2023  1309376
+4    SSS                    SSS         1    SSS  2023  2773898
+..   ...                    ...       ...    ...   ...      ...
+115  SSS                     99         1    65-  2023     1697
+116  SSS                     99         2    SSS  2023    93103
+117  SSS                     99         2   0-17  2023     2402
+118  SSS                     99         2  18-64  2023    88652
+119  SSS                     99         2    65-  2023     2049
+
+[120 rows x 6 columns]
+>>>
+```
+
+To avoid fetching the same dataframes over and over, you can specify a caching
+ID to the invocation:
+
+```py
+>>> q("my_cache_id")
+```
+
+This causes the results to be cached under the `.statfin_cache/` directory.
+Queries with the same caching ID will return this table instead of re-fetching,
+as long as the filter specs match.

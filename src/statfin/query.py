@@ -6,37 +6,39 @@ from statfin.variable import Variable
 
 
 class Query:
-    def __init__(self, table, cache_id: str | None = None):
-        self._table = table
-        self._cache_id = cache_id
+    def __init__(self, table):
+        self.__dict__["_table"] = table
+        self.__dict__["_filters"] = {}
+        for variable in self._table.variables:
+            self[variable.code] = variable.codes
 
-    def __call__(self, **kwargs) -> pd.DataFrame:
-        filters = self._parse_filters(**kwargs)
-        if self._cache_id is None:
-            return self._run(filters)
+    def __setattr__(self, code, spec):
+        """Set the filter for the given code"""
+        self[code] = spec
+
+    def __setitem__(self, code, spec):
+        """Set the filter for the given code"""
+        variable = self._find_variable(code)
+        self._filters[code] = variable.to_query_set(spec)
+
+    def __call__(self, cache_id: str | None = None) -> pd.DataFrame:
+        if cache_id is None:
+            return self._run(self._filters)
         else:
-            return self._cached_run(filters)
-
-    def _cached_run(self, filters) -> pd.DataFrame:
-        assert self._cache_id is not None
-        df = cache.load(self._cache_id, filters)
-        if df is None:
-            df = self._run(filters)
-            cache.store(self._cache_id, df, filters)
-        return df
+            return self._cached_run(self._filters, cache_id)
 
     def _run(self, filters: dict) -> pd.DataFrame:
         return Result(self._fetch(filters)).df
 
+    def _cached_run(self, filters, cache_id: str) -> pd.DataFrame:
+        df = cache.load(cache_id, filters)
+        if df is None:
+            df = self._run(filters)
+            cache.store(cache_id, df, filters)
+        return df
+
     def _fetch(self, filters: dict):
         return post(self._table.url, json=Query._format_query(filters))
-
-    def _parse_filters(self, **kwargs) -> dict:
-        filters = {}
-        for code, value in kwargs.items():
-            variable = self._find_variable(code)
-            filters[code] = variable.to_query_set(str(value))
-        return filters
 
     def _find_variable(self, name) -> Variable:
         candidates = self._find_variable_candidates(name)

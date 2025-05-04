@@ -67,10 +67,12 @@ class Variable:
         """List of value codes for the given query spec"""
         if query == "*" or query is None:
             return self.codes
-        if isinstance(query, str):
+        elif isinstance(query, str):
             assert query in self.codes
             return [query]
-        if isinstance(query, Iterable):
+        elif isinstance(query, Iterable):
             assert [q in self.codes for q in query]
             return list(query)
-        raise RuntimeError(f"Bad query: {query}")
+        else:
+            assert str(query) in self.codes
+            return [str(query)]

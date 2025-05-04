@@ -1,7 +1,5 @@
 from typing import Iterable
 
-import pandas as pd
-
 from statfin.query import Query
 from statfin.requests import get
 from statfin.variable import Variable
@@ -48,10 +46,9 @@ class Table:
                 return variable
         raise IndexError(f"No variable named {code} in the table")
 
-    def query(self, **kwargs) -> pd.DataFrame:
+    def query(self, **kwargs) -> Query:
         """Query data from the API"""
-        return Query(self)(**kwargs)
-
-    def cached_query(self, cache_id: str) -> Query:
-        """Cached query"""
-        return Query(self, cache_id)
+        query = Query(self)
+        for code, spec in kwargs.items():
+            query[code] = spec
+        return query
