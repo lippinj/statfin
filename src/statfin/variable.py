@@ -27,6 +27,7 @@ class Variable:
     def __repr__(self) -> str:
         """Representational string"""
         from statfin.rendering import represent
+
         return represent(
             "statfin.Variable",
             ("code", self.code),
@@ -53,7 +54,23 @@ class Variable:
                 return value
         raise IndexError(f"No value named {code} for the variable")
 
+    @property
+    def codes(self) -> list[str]:
+        return [value.code for value in self.values]
+
     def find(self, pattern: str, flags: re.RegexFlag = re.IGNORECASE) -> list[Value]:
         """Find all values whose text matches the pattern"""
         prog = re.compile(pattern, flags)
-        return [v for v in self if prog.search(v.text)]
+        return [v for v in self.values if prog.search(v.text)]
+
+    def to_query_set(self, query):
+        """List of value codes for the given query spec"""
+        if query == "*" or query is None:
+            return self.codes
+        if isinstance(query, str):
+            assert query in self.codes
+            return [query]
+        if isinstance(query, Iterable):
+            assert [q in self.codes for q in query]
+            return list(query)
+        raise RuntimeError(f"Bad query: {query}")

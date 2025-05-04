@@ -23,6 +23,7 @@ class PxWebAPI:
     def __repr__(self):
         """Representational string"""
         from statfin.rendering import represent
+
         return represent(
             "statfin.PxWebAPI",
             ("url", self.url),
