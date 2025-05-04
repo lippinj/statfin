@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from statfin import cache
@@ -102,8 +103,10 @@ class Result:
     @staticmethod
     def parse_value(x: str):
         x = x.replace(" ", "").replace(",", ".")
-        if x == "":
+        if x in ("", "-", ".."):
             return None
+        if x in ("..",):
+            return np.nan
         if "." in x:
             return float(x)
         return int(x)
