@@ -7,7 +7,7 @@ The PxWeb API is used by many Finnish statistics sources, notably those of
 institute.  For a list of available databases, take a look
 [here](https://stat.fi/tup/tilastotietokannat/index_en.html#free-of-charge-databases).
 
-Results of queries and listings are returned as pandas DataFrames.
+![Usage example in Jupyter Notebook](./assets/jupyter_example_1.png)
 
 ## Installation
 
