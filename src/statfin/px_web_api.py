@@ -1,39 +1,8 @@
 from typing import Any, Iterable
-import dataclasses
 
+from statfin.index_entry import IndexEntry
 from statfin.requests import get
 from statfin.table import Table
-
-
-@dataclasses.dataclass
-class IndexEntry:
-    """Entry in the database index"""
-
-    name: str
-    text: str
-    typeid: str | None = None
-
-    def __repr__(self):
-        """Representational string"""
-        fields = [repr(self.name), repr(self.text)]
-        if self.typeid:
-            fields += [repr(self.typeid)]
-        return f"IndexEntry({', '.join(fields)})"
-
-    @staticmethod
-    def from_json(j):
-        """Parse from JSON"""
-        if j is None:
-            return None
-        elif isinstance(j, list):
-            return [IndexEntry.from_json(e) for e in j]
-        else:
-            name = j.get("id", j.get("dbid", "")).rstrip()
-            text = j["text"].rstrip()
-            typeid = j.get("type", None)
-            if typeid is not None:
-                typeid = typeid.rstrip()
-            return IndexEntry(name, text, typeid)
 
 
 class PxWebAPI:
@@ -53,23 +22,16 @@ class PxWebAPI:
 
     def __repr__(self):
         """Representational string"""
-        s = "statfin.PxWebAPI\n"
-        s += f"  url: {self.url}\n"
-        if self.title:
-            s += f"  title: {self.title}\n"
-        if len(self.index) == 0:
-            s += "  contents: (none)\n"
-        else:
-            s += "  contents:\n"
-            width = max([len(entry.name) for entry in self.index])
-            for entry in self.index:
-                typeid = entry.typeid if entry.typeid else " "
-                name = entry.name.ljust(width)
-                s += f"    {typeid} {name} {entry.text}\n"
-        return s
+        from statfin.rendering import represent
+        return represent(
+            "statfin.PxWebAPI",
+            ("url", self.url),
+            ("title", self.title),
+            ("index", self.index),
+        )
 
     @property
-    def index(self):
+    def index(self) -> list[IndexEntry]:
         """Lazy fetch the index"""
         if self._index is None:
             self._index = IndexEntry.from_json(get(self.url))

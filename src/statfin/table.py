@@ -3,8 +3,8 @@ from typing import Iterable
 import pandas as pd
 
 import statfin
-from statfin.variable import Variable
 from statfin.requests import get, post
+from statfin.variable import Variable
 
 
 class Table:
@@ -24,18 +24,13 @@ class Table:
 
     def __repr__(self):
         """Representational string"""
-        s = "statfin.Table\n"
-        s += f"  url: {self.url}\n"
-        if self.title:
-            s += f"  title: {self.title}\n"
-        if len(self.variables) == 0:
-            s += "  variables: (none)\n"
-        else:
-            s += "  variables:\n"
-            width = max([len(variable.code) for variable in self.variables])
-            for variable in self.variables:
-                s += f"    {variable.code.ljust(width)} {variable.text}\n"
-        return s
+        from statfin.rendering import represent
+        return represent(
+            "statfin.Table",
+            ("url", self.url),
+            ("title", self.title),
+            ("variables", self.variables),
+        )
 
     def __iter__(self) -> Iterable[Variable]:
         """Iterate variables"""

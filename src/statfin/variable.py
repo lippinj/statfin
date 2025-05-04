@@ -26,14 +26,13 @@ class Variable:
 
     def __repr__(self) -> str:
         """Representational string"""
-        s = "statfin.Variable\n"
-        s += f"  code: {self.code}\n"
-        s += f"  text: {self.text}\n"
-        s += "  values:\n"
-        width = max([len(value.code) for value in self.values])
-        for value in self.values:
-            s += f"    {value.code.ljust(width)} {value.text}\n"
-        return s
+        from statfin.rendering import represent
+        return represent(
+            "statfin.Variable",
+            ("code", self.code),
+            ("text", self.text),
+            ("values", self.values),
+        )
 
     def __len__(self) -> int:
         """Number of values"""
