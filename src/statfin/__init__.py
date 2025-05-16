@@ -1,4 +1,5 @@
 from statfin.px_web_api import PxWebAPI
+from statfin.query import Query
 from statfin.requests import RequestError
 from statfin.table import Table
 from statfin.variable import Variable, Value

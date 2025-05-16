@@ -1,21 +1,24 @@
-import numpy as np
 import pandas as pd
 
 from statfin import cache
 from statfin.requests import post
+from statfin.table_response import TableResponse
 from statfin.variable import Variable
 
 
 class Query:
     def __init__(self, table):
-        self.__dict__["_table"] = table
-        self.__dict__["_filters"] = {}
+        self._table = table
+        self._filters = {}
         for variable in self._table.variables:
             self[variable.code] = variable.codes
 
-    def __setattr__(self, code, spec):
+    def __setattr__(self, name, value):
         """Set the filter for the given code"""
-        self[code] = spec
+        if name in ("_table", "_filters"):
+            object.__setattr__(self, name, value)
+        else:
+            self[name] = value
 
     def __setitem__(self, code, spec):
         """Set the filter for the given code"""
@@ -24,22 +27,22 @@ class Query:
 
     def __call__(self, cache_id: str | None = None) -> pd.DataFrame:
         if cache_id is None:
-            return self._run(self._filters)
+            return self._fetch()
         else:
-            return self._cached_run(self._filters, cache_id)
+            return self._cached_fetch(cache_id)
 
-    def _run(self, filters: dict) -> pd.DataFrame:
-        return Result(self._fetch(filters)).df
+    def _fetch(self) -> pd.DataFrame:
+        return TableResponse(self._fetch_json()).df
 
-    def _cached_run(self, filters, cache_id: str) -> pd.DataFrame:
-        df = cache.load(cache_id, filters)
+    def _cached_fetch(self, cache_id: str) -> pd.DataFrame:
+        df = cache.load(cache_id, self._filters)
         if df is None:
-            df = self._run(filters)
-            cache.store(cache_id, df, filters)
+            df = self._fetch()
+            cache.store(cache_id, df, self._filters)
         return df
 
-    def _fetch(self, filters: dict):
-        return post(self._table.url, json=Query._format_query(filters))
+    def _fetch_json(self) -> dict:
+        return post(self._table.url, json=Query._format_query(self._filters))
 
     def _find_variable(self, name) -> Variable:
         candidates = self._find_variable_candidates(name)
@@ -68,45 +71,3 @@ class Query:
                 for code, values in filters.items()
             ],
         }
-
-
-class Result:
-    def __init__(self, j: dict):
-        self.data = {}
-        self.key_codes = []
-        self.key_columns = []
-        self.value_codes = []
-        self.value_columns = []
-        self._populate_columns(j["columns"])
-        self._populate_data(j["data"])
-        self.df = pd.DataFrame(data=self.data)
-
-    def _populate_columns(self, j):
-        for jc in j:
-            code = jc["code"]
-            typeid = jc["type"]
-            self.data[code] = []
-            if typeid == "c":
-                self.value_codes.append(code)
-                self.value_columns.append(self.data[code])
-            else:
-                self.key_codes.append(code)
-                self.key_columns.append(self.data[code])
-
-    def _populate_data(self, j):
-        for jc in j:
-            for col, value in zip(self.key_columns, jc["key"]):
-                col.append(value)
-            for col, value in zip(self.value_columns, jc["values"]):
-                col.append(Result.parse_value(value))
-
-    @staticmethod
-    def parse_value(x: str):
-        x = x.replace(" ", "").replace(",", ".")
-        if x in ("", "-", ".."):
-            return None
-        if x in ("..",):
-            return np.nan
-        if "." in x:
-            return float(x)
-        return int(x)
