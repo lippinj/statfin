@@ -1,3 +1,7 @@
+## 0.3.0
+
+- Automatically parse time colums as a datetime type
+
 ## 0.2.1
 
 - Fixed some number parsing
