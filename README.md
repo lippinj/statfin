@@ -49,8 +49,8 @@ q.Alue = "SSS"       # Single value
 q.Vuosi = 2022       # Single value (cast to str)
 q.Sukupuoli = [1, 2] # Specific values
 q.Tiedot = "*"       # All values (this is the default)
-df = q()
-print(df)
+response = q()
+print(response.df)
 ```
 
 ## Usage
@@ -176,11 +176,11 @@ For each variable, you can specify a single value, a list of values, or all
 available values (by passing `"*"`). The default is to treat all variables as
 `*`.
 
-To execute the query and retrieve results as a pandas DataFrame, invoke the
-query object:
+To execute the query and retrieve results, invoke the query object and read the
+pandas DataFrame from the `df` field of the response object:
 
 ```py
->>> q()
+>>> q().df
     Alue Pääasiallinen toiminta Sukupuoli    Ikä Vuosi   vaesto
 0    SSS                    SSS       SSS    SSS  2023  5603851
 1    SSS                    SSS       SSS   0-17  2023  1022205

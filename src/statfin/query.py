@@ -1,6 +1,7 @@
 import pandas as pd
 
 from statfin import cache
+from statfin.query_response import QueryResponse
 from statfin.requests import post
 from statfin.table_response import TableResponse
 from statfin.variable import Variable
@@ -25,11 +26,11 @@ class Query:
         variable = self._find_variable(code)
         self._filters[code] = variable.to_query_set(spec)
 
-    def __call__(self, cache_id: str | None = None) -> pd.DataFrame:
+    def __call__(self, cache_id: str | None = None) -> QueryResponse:
         if cache_id is None:
-            return self._fetch()
+            return QueryResponse(self._fetch())
         else:
-            return self._cached_fetch(cache_id)
+            return QueryResponse(self._cached_fetch(cache_id))
 
     def _fetch(self) -> pd.DataFrame:
         return TableResponse(self._fetch_json()).df
